@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+		.board{
+			width: 500px;
+			height: 500px;
+			padding: 5px;
+			border: 5px solid green;
+			border-radius: 5px; 
+			position: relative;
+		}
+		#sheet{
+			position: absolute;
+			width: 500px;
+			height: 500px;
+			background-color: yellow;
+			background-image:url('start.png'); 
+			transition: 0.5s all;
+		}
+		#sheet:hover{
+			background-color:red;
+			background-image: url('continue.png'); 
+			background-size: cover;
+			background-position: center;
+		}
+		canvas{
+			position: absolute;
+		}
+		.menu{
+			width: 520px;
+			height: 50px;	
+			position: relative;
+			background-color: red;
+		}
+		#score{
+			width: 70%;
+		    height: 90%;
+		    background-color: black;
+		    color: red;
+		    font-size: 40px;
+		    border: 2px solid red;
+		    position: absolute;
+		    left: 0px;
+		    right: 0px;
+		    margin: auto;
+		}
+		#maxScore{
+			position: absolute;
+			right: 15px;
+			top:1px;
+			color:blue;
+		}
+		.board_parent{
+			width:100%;
+			float: left;
+			position: relative;
+		}
+		.board{
+			width:500px;
+			display: inline-block;
+			float: left;
+		}
+		#gameOverDiv{
+			display: none;
+			position: absolute;
+			top:200px;
+			width: 40%;
+			left:640px;
+			float: left;
+			background-color: red;
+			border: 5px solid black;
+			border-radius: 10px;
+			padding:10px;
+			text-align: center;
+		}
+		#bodyTouch{
+			display: none;
+		}
+		#boundaryTouch{
+			display: none;
+		}
+		#virusTouch{
+			display: none;
+		}
+	</style>
+</head>
+<body>
+
+	Viruses : Click on image to get INFO
+	<a href="info.html" target="_new"><img src="bug.png" id="bug" /> </a>
+	<a href="info.html" target="_new"><img src="bug1.png" id="bug1" /> </a>
+	<a href="info.html" target="_new"><img src="bug2.png" id="bug2" /> </a>
+	<a href="info.html" target="_new"><img src="food.png" id="food" /> </a>
+	<a href="info.html" target="_new"><img src="scissor.png" id="scissor" /> </a>
+	
+	<div class="menu">
+		<p id="score">LEVEL 1 :: Score : 0 </p>
+		<img src="blackPause.png" id="pause" width="50" height="50" />
+		<p id="maxScore"> MAX :: 0 </p>	
+    </div>
+
+	<div class="board_parent"> 
+		<div class="board">
+			<canvas id="board" width="500" height="500">
+			</canvas>
+			<div id="sheet">
+				
+			</div>
+		</div>
+
+		<div id="gameOverDiv">
+			Game is over.<br/>
+			<p id="boundaryTouch">You touched the boundary</p>
+			<p id="bodyTouch">You touched with your body</p>
+			<div id="virusTouch">
+				You touched <img src="" > virus. Your score is <span></span>	
+				<p>HELLO</p>
+			</div>	
+		</div>	
+	</div>
+
+	<img src="bug.png" id="bug" style="display: none" />
+	<img src="food.png" id="food" style="display: none" />
+	<img src="scissor.png" id="scissor" style="display: none" />
+	<img src="gameOver.png" id="gameOver" style="display: none" />	
+	<img src="retry.png" id="retry" style="display: none;" />
+	<img src="pause.png" id="hold" style="display: none;" />
+<script type="text/javascript">
+
+	document.getElementById('sheet').onclick=function(){
+		this.remove();
+		setTimeout(function(){			
+			id=setInterval(drawSnake,200);	
+		},1000);
+	}
+
+	var width=500,height=500;
+	var board=document.getElementById('board');	
+	var canvas=board.getContext('2d');
+    var snake=[{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:1,y:0},{x:0,y:0}];
+    var direction='right';
+    var goodVirus={};
+    var lengthCutter={};
+    var badVirus=[];
+    var score=0;
+    var maxScore=0;
+    var LEVEL=1;
+    var gameOver=false;
+    var pause=false;
+
+    function badVirusCoordinate(){
+    		let num=Math.floor(Math.random()*10)+LEVEL*2;
+    		for(let i=0;i<num;i++){
+    			badVirus.push({
+    				x:Math.floor(Math.random()*(Math.floor(width/15))),
+    				y:Math.floor(Math.random()*(Math.floor(height/15)))
+    			})
+    		}
+    }
+    badVirusCoordinate();   //Getting badViruses
+
+	function refresh(){
+		draw(0,0,width,height,'black','black');
+	}
+	refresh();
+
+	function draw(x,y,w,h,bg,border){
+		if(bg==undefined){ //FOR BUG
+			let img;
+			 if(LEVEL==2){
+				if( x%2 )
+			 		img=document.getElementById('bug1');
+			 	else 
+			 		img=document.getElementById('bug');
+			 }
+			 else if(LEVEL>2){
+			 	if( x%2 )
+			 		img=document.getElementById('bug1');
+			 	else if(y%2)
+			 			img=document.getElementById('bug');
+			 		 else
+			 		 	img=document.getElementById('bug2');	
+			 }
+			 else{ //LEVEL==1
+				img=document.getElementById('bug');
+			 }
+			canvas.drawImage(img,x*w,y*w,w,h);
+			return ;
+		}
+		if(bg=='pink'){	   //FOR FOOD
+			let img=document.getElementById('food');
+			canvas.drawImage(img,x*w,y*w,w,h);
+			return ;	
+		} 
+		if(bg=='yellow'){  //FOR LENGTH CUTTER
+			let img=document.getElementById('scissor');
+			canvas.drawImage(img,x*w,y*w,w,h);
+			return ;	
+		}
+		canvas.fillStyle = bg;
+        canvas.fillRect(x*w, y*h, w, h);
+        canvas.strokeStyle = border;
+        canvas.strokeRect(x*w, y*h, w, h);
+	}
+
+	function newFood(virus){
+		var flag=true;
+		while(flag){
+			flag=false;
+			virus.x=Math.floor(Math.random()*(Math.floor(width/15)));
+			virus.y=Math.floor(Math.random()*(Math.floor(height/15)));
+			for(let data of badVirus){
+				if(data.x==virus.x && data.y==virus.y)
+							flag=true;
+			}
+		}
+	}
+	newFood(goodVirus);
+	
+    for(let i in snake){
+    	draw(snake[i].x,snake[i].y,15,15,'red','black');
+    }
+
+    document.getElementById('board').onclick=function(){
+		if(gameOver==true){
+			snake=[{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:1,y:0},{x:0,y:0}];
+		    direction='right';
+		    goodVirus={};
+		    lengthCutter={};
+		    badVirus=[];
+		    score=0;
+		    LEVEL=1;
+			gameOver=false;
+			newFood(goodVirus);
+			badVirusCoordinate();
+			document.getElementById('score').innerHTML="LEVEL "+LEVEL+" :: Score : "+score;
+			document.getElementById('maxScore').innerHTML=" MAX :: "+maxScore;
+		}
+	}
+
+	document.getElementById('pause').onclick=function(){
+		pause=(pause)?false:true;
+		if(pause)
+			this.setAttribute('src','play.png');
+		else
+			this.setAttribute('src','blackPause.png');
+		let img=document.getElementById('hold');
+		canvas.drawImage(img,0,0,width,height);
+	}
+
+    function drawSnake(){
+        if(gameOver || pause)
+    		return ;
+    	document.getElementById('gameOverDiv').style.display='none';
+    	document.getElementById('bodyTouch').style.display='none';
+    	document.getElementById('boundaryTouch').style.display='none';
+    	document.getElementById('virusTouch').style.display='none';
+
+    	document.getElementById('maxScore').innerHTML=" MAX :: "+maxScore;
+    	var x=snake[0].x;
+        var y=snake[0].y;
+
+        switch(direction)
+        {
+        	case 'left': x--; break;
+        	case 'right': x++; break;
+        	case 'up': y--; break;
+        	case 'down': y++; break;
+        }
+
+    	refresh();
+    	if(x==goodVirus.x && y==goodVirus.y){  //Getting GoodVirus
+    		let audio = new Audio('notify.mp3');
+				audio.play();
+			setTimeout(function(){
+				audio.pause();
+			},500)	
+
+    		let ran=Math.floor(Math.random()*10);
+    		if((ran==5 || ran==7) && lengthCutter.x==undefined && lengthCutter.y==undefined && snake.length>5 ){
+    			console.log('create')
+    			newFood(lengthCutter);
+    		}
+    		snake.unshift({x:x,y:y});	
+    		newFood(goodVirus);
+    		document.getElementById('score').innerHTML="LEVEL "+LEVEL+" :: Score : "+(++score);
+    		if(score>maxScore){
+    				maxScore++;
+    		}
+    		if(score==LEVEL*5){
+    				LEVEL++;
+    				badVirusCoordinate();
+    				document.getElementById('score').innerHTML="LEVEL "+LEVEL+" :: Score : "+score;
+    		}
+    		console.log(maxScore);
+    	}
+    	else if(x==lengthCutter.x && y==lengthCutter.y){
+    		let audio = new Audio('notify.mp3');
+				audio.play();
+			setTimeout(function(){
+				audio.pause();
+			},500)	
+    		snake.pop();	snake.pop(); 	snake.pop();
+    		lengthCutter.x=lengthCutter.y=undefined;
+    	}
+
+    	else if(x==-1 || y==-1 || x==Math.ceil(width/15) || y==Math.ceil(width/15) || bodyCollide() ){
+    		
+    		let audio = new Audio('gameOverTune.mp3');
+						audio.play();
+			
+			let text;
+			let content;
+
+			 if(LEVEL==2){
+				if( snake[0].x%2 ){
+			 		text='bug1.png';
+			 		content=`HPV is the most common sexually transmitted infection (STI). HPV is a different virus than HIV and HSV (herpes). 79 million Americans, most in their late teens and early 20s, are infected with HPV. There are many different types of HPV. Some types can cause health problems including genital warts and cancers. But there are vaccines that can stop these health problems from happening.`;
+				}
+			 	else {
+			 		text='bug.png';
+			 		content=`HIV causes AIDS and interferes with the body's ability to fight infections.The virus can be transmitted through contact with infected blood, semen, or vaginal fluids.Within a few weeks of HIV infection, flu-like symptoms such as fever, sore throat, and fatigue can occur. Then the disease is usually asymptomatic until it progresses to AIDS. AIDS symptoms include weight loss, fever or night sweats, fatigue, and recurrent infections.`;
+			 	}
+			 }
+			 else if(LEVEL>2) {
+			 	if( snake[0].x%2 ){
+			 		text='bug1.png';
+			 		content=`HPV is the most common sexually transmitted infection (STI). HPV is a different virus than HIV and HSV (herpes). 79 million Americans, most in their late teens and early 20s, are infected with HPV. There are many different types of HPV. Some types can cause health problems including genital warts and cancers. But there are vaccines that can stop these health problems from happening.`;
+			 	}
+			 	else if(snake[0].y%2) {
+			 			text='bug.png';
+			 			content=`HIV causes AIDS and interferes with the body's ability to fight infections.The virus can be transmitted through contact with infected blood, semen, or vaginal fluids.Within a few weeks of HIV infection, flu-like symptoms such as fever, sore throat, and fatigue can occur. Then the disease is usually asymptomatic until it progresses to AIDS. AIDS symptoms include weight loss, fever or night sweats, fatigue, and recurrent infections.`
+			 		}
+			 		 else
+			 		 {
+			 		 	text='bug2.png';	
+			 		 	content=`Varicella zoster virus or varicella-zoster virus (VZV) is one of eight herpesviruses known to infect humans. It causes chickenpox (varicella), a disease most commonly affecting children, teens, and young adults, and herpes zoster (shingles) in older adults; shingles is rare in children.VZV multiplies in the lungs, and causes a wide variety of symptoms. After the primary infection (chickenpox), the virus goes dormant in the nerves, including the cranial nerve ganglia, dorsal root ganglia, and autonomic ganglia. Many years after the patient has recovered from chickenpox, VZV can reactivate to cause neurologic conditions.`;
+			 		 }
+			 }
+			 else{ //LEVEL==1
+				text='bug.png';
+				content=`HIV causes AIDS and interferes with the body's ability to fight infections.The virus can be transmitted through contact with infected blood, semen, or vaginal fluids.Within a few weeks of HIV infection, flu-like symptoms such as fever, sore throat, and fatigue can occur. Then the disease is usually asymptomatic until it progresses to AIDS. AIDS symptoms include weight loss, fever or night sweats, fatigue, and recurrent infections.`
+			 }
+
+			gameOver=true;
+			draw(0,0,width,height,'red','black');
+			let img=document.getElementById('gameOver');
+			canvas.drawImage(img,snake[0].x*10,snake[0].y*10,100,100);			
+    		setTimeout(function(){
+    			let img=document.getElementById('retry');
+				canvas.drawImage(img,0,0,width,height);
+				LEVEL=1;
+				score=0;
+				audio.pause();
+    		},1000);
+
+    		document.getElementById('gameOverDiv').style.display='inline-block';
+    		if(x==-1 || y==-1 || x==Math.ceil(width/15) || y==Math.ceil(width/15))	{
+    					document.getElementById('boundaryTouch').style.display='block';
+    					return ;
+    		}
+
+			if(bodyCollide()==1){
+					document.getElementById('bodyTouch').style.display='block';
+					return ;
+			}	
+
+    		var gameOverDiv=document.getElementById('virusTouch');
+				gameOverDiv.getElementsByTagName('img')[0].setAttribute('src',text);
+				gameOverDiv.getElementsByTagName('span')[0].innerHTML=score;
+				gameOverDiv.getElementsByTagName('p')[0].innerHTML=content;
+				gameOverDiv.style.display='inline-block';
+
+    	}
+    	snake.pop();
+    	snake.unshift({x:x,y:y});	
+    	for(let i in snake){
+    			draw(snake[i].x,snake[i].y,15,15,'red','black');
+    	}
+	    draw(goodVirus.x,goodVirus.y,15,15,'pink','blue');
+
+	    for(let pos of badVirus){	//Viruses
+	    	draw(pos.x,pos.y,15,15);
+	    }
+
+	    if(lengthCutter.x && lengthCutter.y ){
+	    	draw(lengthCutter.x,lengthCutter.y,15,15,'yellow','blue');
+	    }
+
+	    
+    }
+    
+    document.onkeydown = function(event) {
+    	if(gameOver || pause )
+    		return ;
+        keyCode = window.event.keyCode; 
+        keyCode = event.keyCode;
+        let audio = new Audio('click.mp3');
+						audio.play();
+						
+        	setTimeout(function(){
+        		audio.pause();
+        },100);	
+        switch(keyCode) 
+        {
+		        case 37: if(direction!='right') direction='left';  break; //left
+		        case 38: if(direction!='down')  direction='up';    break; //up
+		        case 39: if(direction!='left')  direction='right'; break; //right
+		        case 40: if(direction!='up')    direction='down';  break; //down
+		}
+    }
+
+    function bodyCollide(){
+    	var Fx=snake[0].x;
+    	var Fy=snake[0].y;
+    	for(let i=2;i<snake.length;i++){          //own body
+    		if(Fx==snake[i]['x'] && Fy==snake[i]['y']){
+    			return 1;
+    		}
+    	}
+    	for(let v of badVirus){                    //bad virus
+    		if(Fx==v.x && Fy==v.y){
+    			return 2;
+    		}
+    	}
+    	return false;
+    }
+
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Viruses Info</title>
+	<style type="text/css">
+		div{
+			margin:10px;
+			padding:10px;
+		}
+		a{
+			background-color: black;
+			border: 2px solid red;
+			color: red;
+			padding:5px;
+			margin-top:20px;
+		}
+	</style>
+</head>
+<body>
+	<div>
+		<img src="bug.png"> It is a bad Virus(HIV). If snake's head touches then Game will be over.<br />
+		<img src="bug1.png"> It is a bad Virus(Other than HIV). If snake's head touches then Game will be over. It will be visible onwards LEVEL-2<br />          
+		<img src="bug2.png"> It is another bad Virus. If snake's head touches then Game will be over. It will be visible onwards LEVEL-3<br />
+		<img src="food.png"> Your score will be incremented by one. And snake length by 1 block as weel.<br />
+		<img src="scissor.png"> If snake grabs, snake lenght will be decremented by 3 blocks
+	</div>
+	<div>
+		<a href="index.html">Home</a>
+	</div>
+</body>
+</html>
