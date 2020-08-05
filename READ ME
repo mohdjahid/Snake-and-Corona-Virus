@@ -1,0 +1,12 @@
+Languages Use:
+1. HTML 
+2. CSS
+3. JAVASCRIPT
+
+Other Details:
+	Canvas is used to draw the create snake,burger,scrissor.
+
+Images Details:
+1. Burger(Good Virus) - To score
+2. Scissor - Cut the length by 3 boxes
+3. Bug(Bad Virus) - Game Over    	
